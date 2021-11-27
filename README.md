@@ -4,7 +4,7 @@ Cerinte: https://docs.google.com/document/d/1ONe1Wm7C3vDXv-TwnSANb1O5rs8Hv1hSOsM
 
 ## Todo:
 
-- [ ] Filtreaza dupa dupa marimi, pret, brand si tip de produs.
+- [~] WIP: Filtreaza dupa dupa marimi, pret, brand si tip de produs.
 - [ ] ? Alte finisari
 
 ## Detalii de dezvoltare

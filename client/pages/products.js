@@ -2,18 +2,71 @@ import React, { useState } from "react";
 import Fuse from "fuse.js";
 
 function products({ data }) {
-  const [results, setResults] = useState();
-  const [displayed, setDisplayed] = useState();
-  const [count, setCount] = useState(8);
-  const [buttonToggle, setButtonToggle] = useState(false);
-
   const options = {
     keys: ["name", "brand"],
     minMatchCharLength: 1,
     threshold: 0.8,
   };
+
+  // collected items
+  var collectedSizes = new Array();
+  var collectedPrices = new Array();
+  var collectedBrands = new Array();
+  var collectedCategories = new Array();
+
+  // selected items for filtering
+  var selectedSizes = new Array();
+  var selectedPrices = new Array();
+  var selectedBrands = new Array();
+  var selectedCategories = new Array();
+
+  // API call results
+  const [results, setResults] = useState();
+  // shown results
+  const [displayed, setDisplayed] = useState(data);
+  // shown count
+  const [count, setCount] = useState(8);
+  // "Load More" toggle
+  const [buttonToggle, setButtonToggle] = useState(false);
+
+  // Filter toggles:
+  async function filters() {
+    data.map((item) => {
+      collectedBrands.push(item.brand);
+      collectedCategories.push(item.category);
+      collectedPrices.push(item.price);
+      item.warehouseStock.map((subItem) => {
+        collectedSizes.push(subItem.size);
+      });
+    });
+    collectedSizes = [...new Set(collectedSizes)].sort();
+    collectedBrands = [...new Set(collectedBrands)].sort();
+    collectedCategories = [...new Set(collectedCategories)].sort();
+    collectedPrices = [...new Set(collectedPrices)].sort();
+  }
+
+  // finish me tomorrow
+  async function checkSize(item) {
+    console.log(item);
+    if (selectedSizes.includes(item)) {
+      delete test.item;
+    } else selectedSizes.push(item);
+    console.log(selectedSizes);
+  }
+
+  useState(filters());
+
+  // might use these
+  // const [sizeToggle, setSizeToggle] = useState(sizeFunction());
+  // // Price
+  // const [priceToggle, setPriceToggle] = useState();
+  // // Brand
+  // const [brandToggle, setBrandToggle] = useState();
+  // // Category
+  // const [categoryToggle, setCategoryToggle] = useState();
+
   return (
-    <div className="bg-gray-50	">
+    <div className="bg-gray-50">
       <div className="max-w-2xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:max-w-7xl lg:px-8">
         <div>
           <h2 htmlFor="price" className="block font-medium text-gray-700">
@@ -24,7 +77,7 @@ function products({ data }) {
               type="text"
               name="input"
               id="input"
-              className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-none"
+              className="focus:ring-indigo-500 focus:border-indigo-500 block w-full p-1 sm:text-sm rounded-none"
               placeholder="rochie"
               onChange={async (e) => {
                 const { value } = e.currentTarget;
@@ -32,11 +85,66 @@ function products({ data }) {
                 const tempResults = fuse.search(value);
                 setResults(tempResults.map((result) => result.item));
                 setDisplayed(results?.slice(0, count));
-                console.log("Total:" + results?.length);
-                console.log("Displayed:" + displayed?.length);
                 setButtonToggle(true);
               }}
             />
+          </div>
+
+          <div>
+            <p className="font-medium">Mărime</p>
+            {collectedSizes?.map((item, refIndex) => (
+              <span key={refIndex}>
+                <input
+                  id="comments"
+                  name="comments"
+                  type="checkbox"
+                  className=" h-4 w-4 text-yellow-600 border-gray-300 rounded"
+                  onClick={() => checkSize({ item })}
+                />
+                <label> {item} </label>
+              </span>
+            ))}
+            <p className="font-medium">Preț</p>
+            <span>
+              <input
+                id="comments"
+                name="comments"
+                placeholder="minim"
+                type="text"
+                className="p-1 shadow-sm rounded"
+              />{" "}
+              <input
+                id="comments"
+                name="comments"
+                placeholder="maxim"
+                type="text"
+                className="p-1 shadow-sm rounded"
+              />
+            </span>
+            <p className="font-medium">Brand</p>
+            {collectedBrands?.map((item, refIndex) => (
+              <span key={refIndex}>
+                <input
+                  id="comments"
+                  name="comments"
+                  type="checkbox"
+                  className="focus:bg-yellow-500 h-4 w-4 text-yellow-600 border-gray-300 rounded"
+                />
+                <label> {item} </label>
+              </span>
+            ))}
+            <p className="font-medium">Tip produs</p>
+            {collectedCategories?.map((item, refIndex) => (
+              <span key={refIndex}>
+                <input
+                  id="comments"
+                  name="comments"
+                  type="checkbox"
+                  className="focus:bg-yellow-500 h-4 w-4 text-yellow-600 border-gray-300 rounded"
+                />
+                <label> {item} </label>
+              </span>
+            ))}
           </div>
         </div>
         <div className="mt-6 grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
@@ -61,8 +169,8 @@ function products({ data }) {
                       {item.name}
                     </a>
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">{item.brand}</p>
                   <p className="mt-1 text-sm text-gray-500">
+                    {""}
                     {item.warehouseStock[0]?.size}{" "}
                     {item.warehouseStock[1]?.size}{" "}
                     {item.warehouseStock[2]?.size}{" "}
@@ -75,7 +183,7 @@ function products({ data }) {
                     {item.warehouseStock[9]?.size}
                   </p>
                   <p className="text-sm font-medium text-yellow-500">
-                    {item.price} RON
+                    {item.price} lei
                   </p>
                 </div>
               </div>
