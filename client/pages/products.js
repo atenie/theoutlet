@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Fuse from "fuse.js";
+import * as _ from "underscore";
 
 function products({ data }) {
   const options = {
@@ -20,8 +21,22 @@ function products({ data }) {
   var selectedBrands = new Array();
   var selectedCategories = new Array();
 
+  // generated arrays for intersection
+  var generatedSizes = new Array();
+  var generatedPrices = new Array();
+  var generatedBrands = new Array();
+  var generatedCategories = new Array();
+  // should've been used, hasn't been.
+  var generatedTexts = new Array();
+
+  // should've been used, hasn't been.
+  var minPrice = new Number();
+
+  // Max budget
+  var maxPrice = new Number();
+
   // API call results
-  const [results, setResults] = useState();
+  const [results, setResults] = useState([]);
   // shown results
   const [displayed, setDisplayed] = useState(data);
   // shown count
@@ -45,25 +60,120 @@ function products({ data }) {
     collectedPrices = [...new Set(collectedPrices)].sort();
   }
 
-  // finish me tomorrow
   async function checkSize(item) {
     console.log(item);
-    if (selectedSizes.includes(item)) {
-      delete test.item;
-    } else selectedSizes.push(item);
+    var found = false;
+    var tempSize = item.item;
+    for (var i = 0; i < selectedSizes.length; i++) {
+      if (selectedSizes[i] == item.item) {
+        found = true;
+        selectedSizes.splice(i, 1);
+        var tempLocalArray = [];
+        data.map((item) =>
+          item.warehouseStock.forEach((subItem) => {
+            selectedSizes.forEach((element) => {
+              if (subItem.size == element) tempLocalArray.push(item);
+            });
+          })
+        );
+        generatedSizes.length = 0;
+        generatedSizes.push.apply(generatedSizes, tempLocalArray);
+
+        break;
+      }
+    }
+    if (!found) {
+      selectedSizes.push(item.item);
+      data.map((item) =>
+        item.warehouseStock.forEach((subItem) => {
+          if (subItem.size == tempSize) generatedSizes.push(item);
+        })
+      );
+    }
+    console.log("Sizes:");
     console.log(selectedSizes);
+    console.log(generatedSizes);
+    intersectArrays();
+  }
+
+  async function checkCategory(item) {
+    var found = false;
+    for (var i = 0; i < selectedCategories.length; i++) {
+      if (selectedCategories[i] == item.item) {
+        found = true;
+        selectedCategories.splice(i, 1);
+        break;
+      }
+    }
+    if (!found) {
+      selectedCategories.push(item.item);
+    }
+    console.log("Categories:");
+    console.log(selectedCategories);
+    generatedCategories = data.filter((item) =>
+      selectedCategories.includes(item.category)
+    );
+    console.log("Generated Categories:");
+    console.log(generatedCategories);
+    intersectArrays();
+  }
+
+  async function checkBrand(item) {
+    var found = false;
+    for (var i = 0; i < selectedBrands.length; i++) {
+      if (selectedBrands[i] == item.item) {
+        found = true;
+        selectedBrands.splice(i, 1);
+        break;
+      }
+    }
+    if (!found) {
+      selectedBrands.push(item.item);
+    }
+    console.log("Brands:");
+    console.log(selectedBrands);
+    generatedBrands = data.filter((item) =>
+      selectedBrands.includes(item.brand)
+    );
+    console.log("Generated Brands:");
+    console.log(generatedBrands);
+    intersectArrays();
+  }
+
+  async function checkPrice(item) {
+    maxPrice = parseInt(item);
+
+    if (isNaN(maxPrice) || maxPrice === 0) {
+      selectedPrices.splice(0, selectedPrices.length, ...collectedPrices);
+    } else {
+      selectedPrices = collectedPrices.filter(function (it) {
+        return it < maxPrice;
+      });
+    }
+    console.log("Prices:");
+    console.log(selectedPrices);
+    generatedPrices = data.filter((item) =>
+      selectedPrices.includes(item.price)
+    );
+    console.log(generatedPrices);
+    intersectArrays();
+  }
+
+  async function intersectArrays() {
+    setResults(
+      // should've worked with a join, but no way in this manner.
+      _.union(
+        generatedCategories,
+        generatedBrands,
+        generatedPrices,
+        generatedSizes
+      )
+    );
+    setDisplayed(results?.slice(0, count));
+    setButtonToggle(true);
   }
 
   useState(filters());
-
-  // might use these
-  // const [sizeToggle, setSizeToggle] = useState(sizeFunction());
-  // // Price
-  // const [priceToggle, setPriceToggle] = useState();
-  // // Brand
-  // const [brandToggle, setBrandToggle] = useState();
-  // // Category
-  // const [categoryToggle, setCategoryToggle] = useState();
 
   return (
     <div className="bg-gray-50">
@@ -78,7 +188,7 @@ function products({ data }) {
               name="input"
               id="input"
               className="focus:ring-indigo-500 focus:border-indigo-500 block w-full p-1 sm:text-sm rounded-none"
-              placeholder="rochie"
+              placeholder="Bluza Natascha Navy"
               onChange={async (e) => {
                 const { value } = e.currentTarget;
                 const fuse = new Fuse(data, options);
@@ -107,18 +217,14 @@ function products({ data }) {
             <p className="font-medium">Preț</p>
             <span>
               <input
-                id="comments"
-                name="comments"
-                placeholder="minim"
+                id="input2"
+                name="input2"
+                placeholder="bugetul tau"
                 type="text"
                 className="p-1 shadow-sm rounded"
-              />{" "}
-              <input
-                id="comments"
-                name="comments"
-                placeholder="maxim"
-                type="text"
-                className="p-1 shadow-sm rounded"
+                onChange={(e) => {
+                  checkPrice(e.target.value);
+                }}
               />
             </span>
             <p className="font-medium">Brand</p>
@@ -129,6 +235,7 @@ function products({ data }) {
                   name="comments"
                   type="checkbox"
                   className="focus:bg-yellow-500 h-4 w-4 text-yellow-600 border-gray-300 rounded"
+                  onClick={() => checkBrand({ item })}
                 />
                 <label> {item} </label>
               </span>
@@ -141,6 +248,7 @@ function products({ data }) {
                   name="comments"
                   type="checkbox"
                   className="focus:bg-yellow-500 h-4 w-4 text-yellow-600 border-gray-300 rounded"
+                  onClick={() => checkCategory({ item })}
                 />
                 <label> {item} </label>
               </span>
@@ -159,7 +267,7 @@ function products({ data }) {
               </div>
               <div className="mt-4 flex justify-between">
                 <div>
-                  <h3 className="text-sm text-gray-700">
+                  <h3 className="text-sm pb-1 text-gray-700">
                     <a className="font-medium" href={item.siteURL}>
                       <span aria-hidden="true" className="absolute inset-0 ">
                         <span className="bg-white pb-1.5 pr-1.5 rounded-none">
@@ -169,20 +277,17 @@ function products({ data }) {
                       {item.name}
                     </a>
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {""}
-                    {item.warehouseStock[0]?.size}{" "}
-                    {item.warehouseStock[1]?.size}{" "}
-                    {item.warehouseStock[2]?.size}{" "}
-                    {item.warehouseStock[3]?.size}{" "}
-                    {item.warehouseStock[4]?.size}{" "}
-                    {item.warehouseStock[5]?.size}{" "}
-                    {item.warehouseStock[6]?.size}{" "}
-                    {item.warehouseStock[7]?.size}{" "}
-                    {item.warehouseStock[8]?.size}{" "}
-                    {item.warehouseStock[9]?.size}
+                  <p className="mt-1 text-xs text-black">
+                    {item.warehouseStock.map((subItem, subRefIndex) => (
+                      <span key={subRefIndex}>
+                        <span className="p-0.5 border border-1 border-gray-300">
+                          {subItem.size}
+                        </span>
+                        {"⠀"}
+                      </span>
+                    ))}
                   </p>
-                  <p className="text-sm font-medium text-yellow-500">
+                  <p className="text-sm pt-2 font-medium text-yellow-500">
                     {item.price} lei
                   </p>
                 </div>
@@ -192,6 +297,7 @@ function products({ data }) {
         </div>
         <div className="mt-2"></div>
         <button
+          id="loadMore"
           onClick={() => (
             setDisplayed(results?.slice(0, count + 8)),
             setCount(count + 8),
